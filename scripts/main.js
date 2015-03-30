@@ -13,7 +13,11 @@ var App = function() {
 
     this.effect;
 
-    this.stereoEnabled = true;
+    this.controls;
+
+    this.clock = new THREE.Clock();
+
+    this.stereoEnabled = false;
 
     /**
      * init scene
@@ -21,11 +25,12 @@ var App = function() {
     this.init = function() {
         self.renderer = new THREE.WebGLRenderer();
         self.renderer.setPixelRatio( window.devicePixelRatio );
-        self.renderer.setSize( window.innerWidth, window.innerHeight )
+        self.renderer.setSize( window.innerWidth, window.innerHeight - 30 )
         document.body.appendChild( self.renderer.domElement );
 
         self.camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 2200 );
         self.camera.position.z = 400;
+        self.camera.up = new THREE.Vector3(0, 1, 0);
 
         self.scene = new THREE.Scene();
 
@@ -47,6 +52,10 @@ var App = function() {
         self.scene.add(self.spot.target)
         self.scene.add(self.spot);
 
+        self.controls = new THREE.DeviceOrientationControls(self.camera, true);
+        self.controls.connect();
+        self.controls.update();
+
         if (self.stereoEnabled) {
             self.effect = new THREE.StereoEffect( self.renderer );
             self.effect.eyeSeparation = 3;
@@ -54,8 +63,20 @@ var App = function() {
         }
 
         window.addEventListener( 'resize', this.onWindowResize, false );
+        //window.addEventListener('deviceorientation', this.onDeviceOrientation, false);
         document.addEventListener('keydown', this.onKeyboardInput, false );
         document.addEventListener('mousemove', this.onMouseMove, false );
+    };
+
+    /**
+     * on device orientation event
+     * @param event
+     */
+    this.onDeviceOrientation = function(event) {
+        //self.camera.rotation.z = event.gamma/10;
+        //self.camera.rotation.y = event.alpha/10;
+        self.camera.rotation.x = event.beta/10;
+        document.getElementById('log').innerHTML = "LR: " + event.gamma + " FB: " + event.beta + " Dir: " + event.alpha;
     };
 
     /**
@@ -117,6 +138,7 @@ var App = function() {
      */
     this.animate = function() {
         window.requestAnimationFrame( self.animate );
+        self.controls.update(self.clock.getDelta());
 
         if (self.stereoEnabled) {
             self.effect.render( self.scene, self.camera );
